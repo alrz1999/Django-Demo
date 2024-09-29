@@ -12,8 +12,7 @@ This repository contains a Django application that allows users to score various
 - [Models](#models)
 - [Normalization Logic](#normalization-logic)
 - [How Z-Scores Handle Anomalies](#how-z-scores-handle-anomalies)
-- [Contributing](#contributing)
-- [License](#license)
+- 
 
 ## Features
 
@@ -125,3 +124,14 @@ The Z-score is a statistical measurement that describes a score's relationship t
 2. **Filter Out Anomalies**: Scores that have a Z-score exceeding a predefined threshold (e.g., ±2.0) are considered outliers and are excluded from the final normalized score calculation. This helps ensure that extreme, potentially coordinated scores do not disproportionately affect the content's overall rating.
 
 By using Z-scores, the application effectively reduces the impact of rapid, emotionally driven, or coordinated scoring, providing a more stable and reliable normalized score for each content item.
+
+### Database Initialization Command
+
+To initialize the database with sample contents and scores for testing the normalization logic, you can use the management command provided in the Django application. This command creates sample users, contents, and scores, including a surge of low scores to simulate real-world scenarios.
+
+#### Command
+
+You can run the database initialization command with the following command:
+
+```bash
+python manage.py initialize_db
