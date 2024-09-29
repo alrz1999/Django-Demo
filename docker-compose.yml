@@ -1,0 +1,83 @@
+services:
+  startup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "sleep 10 && python manage.py collectstatic --noinput && python manage.py migrate"]
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - startup
+      - db
+      - redis
+    restart: always
+
+  celery:
+    build:
+      context: .
+      dockerfile: celery.Dockerfile
+    command: celery -A redit worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - startup
+      - redis
+      - db
+    restart: always
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: celery.Dockerfile
+    command: celery -A redit beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - startup
+      - redis
+      - db
+    restart: always
+
+  redis:
+    image: "redis:6.0-alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: redit
+      MYSQL_USER: alireza
+      MYSQL_PASSWORD: 12345
+      MYSQL_ROOT_PASSWORD: 12345
+    ports:
+      - "3306:3306"
+    restart: always
+
+volumes:
+  db_data:
