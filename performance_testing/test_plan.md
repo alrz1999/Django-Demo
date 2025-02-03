@@ -74,7 +74,7 @@
      - **Prometheus & Grafana**: For monitoring and visualizing CPU, memory, and other metrics.
      
    - **Data**:
-     - Test data will be generated via custom scripts (`generate_test_data.py`) to populate the database with users, content, and scores.
+     - Test data will be generated via custom scripts (`inialize_db.py`) to populate the database with users, content, and scores.
    
    - **Execution**:
      - The test will be executed in a Docker Compose environment on local machines and in cloud environments (if necessary for higher loads).
@@ -98,7 +98,6 @@
 #### 9. **Test Deliverables**
    - **Test Plan Document**: This document detailing the test plan.
    - **Test Cases**: Scripts such as `locustfile.py` for Locust.
-   - **Test Data**: Scripts for generating test data (`generate_test_data.py`).
    - **Test Reports**: Performance results and logs.
    - **Monitoring Metrics**: Dashboards from Grafana or CSV reports from Prometheus.
 
@@ -148,7 +147,7 @@
      - **Mitigation**: Use production-like data when available.
 
 #### 16. **Approvals**
-   - **Test Lead**: John Doe (Approved on January 23, 2025)
+   - **Test Lead**: Alireza Ziaee (Approved on January 23, 2025)
    - **Project Manager**: Jane Smith (Approved on January 23, 2025)
 
 ### Conclusion
