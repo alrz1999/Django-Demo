@@ -19,7 +19,7 @@ class Command(BaseCommand):
         contents = [
             Content.objects.get(id=i) if Content.objects.filter(id=i).first() is not None else
             Content.objects.create(title=f'Content {i}', text=f'This is the content text for item {i}.')
-            for i in range(1, 6)
+            for i in range(1, 200)
         ]
 
         # Generate scores for each content

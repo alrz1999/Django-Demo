@@ -1,0 +1,184 @@
+services:
+  startup:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "sleep 10 && python manage.py migrate"]
+    volumes:
+#      - ./static:/app/static
+      - static_volume:/app/staticfiles  # Shared volume for static files
+    env_file:
+      - .env.stage
+    depends_on:
+      - db
+      - redis
+    restart: "no"
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    volumes:
+#      - ./static:/app/static
+      - static_volume:/app/staticfiles  # Shared volume for static files
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.stage
+    depends_on:
+      - startup
+      - db
+      - redis
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - static_volume:/app/staticfiles  # Shared volume for static files
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    restart: always
+
+  celery:
+    build:
+      context: ..
+      dockerfile: celery.Dockerfile
+    command: celery -A redit worker --loglevel=info
+    volumes:
+#      - ./static:/app/static
+      - static_volume:/app/staticfiles  # Shared volume for static files
+    env_file:
+      - .env.stage
+    depends_on:
+      - startup
+      - redis
+      - db
+    restart: always
+
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: celery.Dockerfile
+    command: celery -A redit beat --loglevel=info
+    volumes:
+#      - ./static:/app/static
+      - static_volume:/app/staticfiles  # Shared volume for static files
+    env_file:
+      - .env.stage
+    depends_on:
+      - startup
+      - redis
+      - db
+    restart: always
+
+  redis:
+    image: "redis:6.0-alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: redit
+      MYSQL_USER: alireza
+      MYSQL_PASSWORD: 12345
+      MYSQL_ROOT_PASSWORD: 12345
+    ports:
+      - "3306:3306"
+    restart: always
+
+  locust-master:
+    build:
+      context: .
+      dockerfile: locust.Dockerfile
+    command: >
+      locust -f locustfile.py --host http://nginx --master
+    ports:
+      - "8089:8089"  # Locust web UI
+    depends_on:
+      - web
+    env_file:
+      - .env.stage
+    restart: always
+
+  locust-worker:
+    build:
+      context: .
+      dockerfile: locust.Dockerfile
+    command: >
+      locust -f locustfile.py --worker --master-host locust-master
+    depends_on:
+      - locust-master
+      - web
+    env_file:
+      - .env.stage
+    restart: always
+    scale: 6  # Number of worker nodes (you can adjust this as needed)
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    command: -nginx.scrape-uri=http://nginx:80/nginx_status
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx
+    restart: always
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    restart: always
+
+  mysql-exporter:
+    image: prom/mysqld-exporter
+    environment:
+      - DATA_SOURCE_NAME=root:12345@(db:3306)/redit
+    ports:
+      - "9104:9104"
+    command:
+      - "--mysqld.username=root:12345"
+      - "--mysqld.address=db:3306"
+    depends_on:
+      - db
+    restart: always
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    restart: always
+    depends_on:
+      - web
+      - redis
+      - db
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: always
+volumes:
+  db_data:
+  static_volume:
+  grafana_data:
+  prometheus_data:
